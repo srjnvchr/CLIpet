@@ -11,10 +11,13 @@ import time
 import glob
 import json
 import signal
+import shutil
 import tempfile
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from scene import compose_frame, COUCH_SPOT, DESK_STAND, lerp
+from scene import (
+    compose_frame, crop_canvas, CANVAS_W, CANVAS_H, COUCH_SPOT, DESK_STAND, lerp,
+)
 from ansi import (
     canvas_to_ansi, HOME, HIDE_CURSOR, SHOW_CURSOR, RESET,
     ENTER_ALT_SCREEN, EXIT_ALT_SCREEN, CLEAR,
@@ -93,6 +96,20 @@ def caption_for(mode, t):
     return CAPTIONS.get(mode, "")
 
 
+def render_size():
+    """Pixel (w, h) to draw this frame at, clamped to the terminal's
+    current size so the ANSI output never exceeds it - that's what
+    causes the terminal to wrap/scroll and jitter on every frame.
+    Re-read every tick so live window resizes are picked up. One
+    terminal line is reserved for the caption below the canvas, and h
+    is kept even since each line renders two pixel rows."""
+    cols, lines = shutil.get_terminal_size(fallback=(CANVAS_W, CANVAS_H // 2 + 1))
+    usable_lines = max(1, lines - 1)
+    w = max(1, min(CANVAS_W, cols))
+    h = max(2, min(CANVAS_H, usable_lines * 2))
+    return w, h
+
+
 def main():
     # The alternate screen buffer is what full-screen terminal apps
     # (vim, less, htop) use: a separate canvas with no scrollback of
@@ -111,6 +128,7 @@ def main():
 
     try:
         t0 = time.time()
+        prev_size = None
         while True:
             now = time.time()
             path, state = latest_state()
@@ -123,13 +141,22 @@ def main():
             t = now - t0
             canvas = compose_frame(bot_pos, state.get("mode", "at_couch"), t)
 
+            w, h = render_size()
+            canvas = crop_canvas(canvas, w, h)
+
             frame = canvas_to_ansi(canvas)
-            caption = caption_for(state.get("mode", "at_couch"), t)
+            caption = caption_for(state.get("mode", "at_couch"), t)[:w]
+            if (w, h) != prev_size:
+                # The terminal was resized since the last frame: clear
+                # it fully first, otherwise pixels from the old, larger
+                # frame linger around the edges of the new, smaller one.
+                sys.stdout.write(CLEAR)
+                prev_size = (w, h)
             # No trailing newline after the caption - that would push
             # the cursor one row past the last line of content for no
             # reason, and inside a tight pane that's one more line
             # than necessary competing for space.
-            sys.stdout.write(HOME + frame + "\n" + RESET + caption.ljust(40))
+            sys.stdout.write(HOME + frame + "\n" + RESET + caption.ljust(w))
             sys.stdout.flush()
             time.sleep(TICK)
     finally:

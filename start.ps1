@@ -6,7 +6,18 @@
 $ErrorActionPreference = "Stop"
 $ScriptDir = $PSScriptRoot
 $PetPy = Join-Path $ScriptDir "renderer\pet.py"
-$PetPaneLines = 34
+
+# A pet pane taller than the whole window is an invalid split - WezTerm's
+# ConPTY creation fails on it with an opaque "invalid parameter" error
+# instead of a clear size complaint. Clamp to what actually fits, leaving
+# a minimum of rows for the shell pane below it.
+$MaxPetPaneLines = 34
+$MinShellLines = 6
+$WindowHeight = $Host.UI.RawUI.WindowSize.Height
+$PetPaneLines = [Math]::Max(4, [Math]::Min($MaxPetPaneLines, $WindowHeight - $MinShellLines))
+if ($PetPaneLines -lt 20) {
+    Write-Warning "Window is only $WindowHeight rows tall, so the pet pane will be cramped ($PetPaneLines rows). Make the WezTerm window taller (40+ rows) for a comfortable view."
+}
 
 if (-not (Test-Path $PetPy)) {
     Write-Error "Can't find $PetPy - run this script from the deskbot-pet folder."

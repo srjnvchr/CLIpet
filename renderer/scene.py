@@ -45,6 +45,21 @@ def new_canvas():
     return [[BG for _ in range(CANVAS_W)] for _ in range(CANVAS_H)]
 
 
+def crop_canvas(canvas, w, h):
+    """Return a centered w x h window into canvas. Used to fit the fixed
+    scene into a terminal smaller than CANVAS_W x CANVAS_H without
+    stretching or re-rendering at a different resolution - just show
+    less of the room, evenly trimmed from each edge so it stays
+    centered as the terminal is resized."""
+    full_h = len(canvas)
+    full_w = len(canvas[0]) if full_h else 0
+    w = max(1, min(w, full_w))
+    h = max(1, min(h, full_h))
+    x0 = (full_w - w) // 2
+    y0 = (full_h - h) // 2
+    return [row[x0:x0 + w] for row in canvas[y0:y0 + h]]
+
+
 def set_px(c, x, y, color):
     x, y = int(round(x)), int(round(y))
     if 0 <= y < CANVAS_H and 0 <= x < CANVAS_W:
