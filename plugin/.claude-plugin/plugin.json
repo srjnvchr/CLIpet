@@ -1,0 +1,7 @@
+{
+  "name": "deskbot-pet",
+  "displayName": "Deskbot Pet",
+  "version": "1.0.0",
+  "description": "Writes busy/idle state for the deskbot-pet animated pixel companion (see the renderer/ folder in this project, run separately in its own tmux pane).",
+  "keywords": ["fun", "pixel-art", "companion"]
+}
