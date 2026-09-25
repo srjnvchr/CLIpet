@@ -99,6 +99,21 @@ PET_CHARACTER=orb ./start.sh                        # try the other character
 - **Shared drawing primitives**: `renderer/canvas.py` (`fill_rect`,
   `fill_circle`, `fill_polygon`, etc.) — scene- and character-agnostic,
   used by both sides.
+- **Using your own art instead of code**: you don't have to hand-write a
+  scene/character module at all — turn an image into one with:
+  ```bash
+  python design/import_image.py room.png --as background --name myroom
+  python design/import_image.py cat.png  --as character --name myroom
+  PET_SCENE=myroom PET_CHARACTER=myroom ./start.sh
+  ```
+  This writes `renderer/packs/myroom/{background,character}.json`; a
+  pack only needs whichever half you made art for, and mixes freely
+  with the built-ins (`PET_CHARACTER=myroom` with the default
+  `couch_desk` scene works fine). `design/import_image.py` is the only
+  place PIL is needed — `pet.py` itself stays stdlib-only, reading the
+  plain JSON these packs are made of. See `renderer/packs/README.md`
+  for the file format if you'd rather hand-edit or generate one
+  yourself.
 - **Walk speed**: `plugin/scripts/state_lib.py`, the `WALK_DURATION`
   constant (seconds for a full idle <-> work walk). This is the only
   place to change it, `pet.py` just reads whatever duration the state
