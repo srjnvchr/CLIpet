@@ -15,9 +15,11 @@ import shutil
 import tempfile
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from scene import (
-    compose_frame, crop_canvas, CANVAS_W, CANVAS_H, COUCH_SPOT, DESK_STAND, lerp,
-)
+import phase as Phase
+from canvas import crop_canvas, lerp
+from compose import compose_frame
+from scenes import get_scene
+from characters import get_character
 from ansi import (
     canvas_to_ansi, HOME, HIDE_CURSOR, SHOW_CURSOR, RESET,
     ENTER_ALT_SCREEN, EXIT_ALT_SCREEN, CLEAR,
@@ -25,6 +27,9 @@ from ansi import (
 
 STATE_DIR = os.path.join(os.environ.get("TMPDIR", "/tmp"), "deskbot-pet-state")
 TICK = 0.15  # seconds between frames, ~6-7 fps
+
+SCENE = get_scene(os.environ.get("PET_SCENE", "couch_desk"))
+CHARACTER = get_character(os.environ.get("PET_CHARACTER", "bot"))
 
 CAPTIONS = {
     "at_couch": None,          # set per idle sub-frame below
@@ -103,10 +108,10 @@ def render_size():
     Re-read every tick so live window resizes are picked up. One
     terminal line is reserved for the caption below the canvas, and h
     is kept even since each line renders two pixel rows."""
-    cols, lines = shutil.get_terminal_size(fallback=(CANVAS_W, CANVAS_H // 2 + 1))
+    cols, lines = shutil.get_terminal_size(fallback=(SCENE.CANVAS_W, SCENE.CANVAS_H // 2 + 1))
     usable_lines = max(1, lines - 1)
-    w = max(1, min(CANVAS_W, cols))
-    h = max(2, min(CANVAS_H, usable_lines * 2))
+    w = max(1, min(SCENE.CANVAS_W, cols))
+    h = max(2, min(SCENE.CANVAS_H, usable_lines * 2))
     return w, h
 
 
@@ -137,9 +142,10 @@ def main():
 
             pos = interpolated_pos(state, now)
             state = settle_if_arrived(path, state, pos)
-            bot_pos = lerp(COUCH_SPOT, DESK_STAND, pos)
+            bot_pos = lerp(SCENE.SPOTS["idle"], SCENE.SPOTS["work"], pos)
             t = now - t0
-            canvas = compose_frame(bot_pos, state.get("mode", "at_couch"), t)
+            phase = Phase.from_plugin_mode(state.get("mode", "at_couch"))
+            canvas = compose_frame(SCENE, CHARACTER, bot_pos, phase, t)
 
             w, h = render_size()
             canvas = crop_canvas(canvas, w, h)

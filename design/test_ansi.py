@@ -1,19 +1,29 @@
-import sys, re
-sys.path.insert(0, "/home/claude/deskbot-pet/renderer")
-from scene import compose_frame, DESK_STAND
+import os
+import re
+import sys
+
+HERE = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, os.path.join(os.path.dirname(HERE), "renderer"))
+import phase as Phase
+from compose import compose_frame
+from scenes import get_scene
+from characters import get_character
 from ansi import canvas_to_ansi
 
-canvas = compose_frame(DESK_STAND, "at_desk", t=0.0)
+scene = get_scene("couch_desk")
+character = get_character("bot")
+
+canvas = compose_frame(scene, character, scene.SPOTS["work"], Phase.WORKING, t=0.0)
 ansi = canvas_to_ansi(canvas)
 
 # parse it back
-pat = re.compile(r"\x1b\[38;2;(\d+);(\d+);(\d+);48;2;(\d+);(\d+);(\d+)m|\u2580|\x1b\[0m")
+pat = re.compile(r"\x1b\[38;2;(\d+);(\d+);(\d+);48;2;(\d+);(\d+);(\d+)m|▀|\x1b\[0m")
 rebuilt = []
 cur_fg = cur_bg = (0, 0, 0)
 for line in ansi.split("\n"):
     top_row, bot_row = [], []
     for m in pat.finditer(line):
-        if m.group(0) == "\u2580":
+        if m.group(0) == "▀":
             top_row.append(cur_fg)
             bot_row.append(cur_bg)
         elif m.group(0) != "\x1b[0m":

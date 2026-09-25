@@ -71,17 +71,38 @@ session.
 
 ## Customizing
 
+`renderer/` splits into three independent pieces: a **scene** (the room),
+a **character** (the thing walking around in it), and a generic
+**composer** that draws whatever pair of those it's given. Pick which
+pair `pet.py` uses with two env vars (both optional, default to the
+originals):
+
+```bash
+PET_SCENE=couch_desk PET_CHARACTER=bot ./start.sh   # the defaults
+PET_CHARACTER=orb ./start.sh                        # try the other character
+```
+
+- **Adding a scene**: create `renderer/scenes/your_scene.py` exposing
+  `CANVAS_W`, `CANVAS_H`, `BG`, `SPOTS = {"idle": (x, y), "work": (x, y)}`,
+  `draw_background(c)` (static geometry), and `draw_props(c, phase, t)`
+  (anything that reacts to `phase` — see `phase.py` for the vocabulary).
+  Register it in `renderer/scenes/__init__.py`'s `SCENES` dict.
+  `renderer/scenes/couch_desk.py` is the reference implementation — its
+  palette and room-corner constants (`BACK`, `LEFT`, `RIGHT`, `FRONT`,
+  `WALL_H`) live there now, not in a shared `scene.py`.
+- **Adding a character**: create `renderer/characters/your_character.py`
+  exposing `draw(c, pos, phase, t)` and, optionally, `idle_activity(c, spot, t)`
+  (only called when idle — a character without one, like
+  `renderer/characters/orb.py`, just doesn't do anything extra while idle).
+  Register it in `renderer/characters/__init__.py`'s `CHARACTERS` dict.
+  `renderer/characters/bot.py` is the reference implementation.
+- **Shared drawing primitives**: `renderer/canvas.py` (`fill_rect`,
+  `fill_circle`, `fill_polygon`, etc.) — scene- and character-agnostic,
+  used by both sides.
 - **Walk speed**: `plugin/scripts/state_lib.py`, the `WALK_DURATION`
-  constant (seconds for a full couch <-> desk walk). This is the only
+  constant (seconds for a full idle <-> work walk). This is the only
   place to change it, `pet.py` just reads whatever duration the state
   file says.
-- **Colors**: `renderer/scene.py`, the palette constants near the top
-  (`BOT_BODY`, `COUCH`, `FLOOR`, etc.) are plain `(r, g, b)` tuples.
-- **Room layout / size**: also in `scene.py`. `BACK`, `LEFT`, `RIGHT`,
-  `FRONT` are the four floor corners in pixel space, `WALL_H` is wall
-  height. `CANVAS_W`/`CANVAS_H` set the overall size — if you change
-  those, rescale the corner coordinates proportionally too, they're
-  absolute, not relative.
 - **Frame rate**: `renderer/pet.py`, the `TICK` constant (seconds
   between frames). 0.15 is a reasonable balance; going much below
   that mostly just burns CPU without looking smoother at this
