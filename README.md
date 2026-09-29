@@ -114,6 +114,12 @@ PET_CHARACTER=orb ./start.sh                        # try the other character
   plain JSON these packs are made of. See `renderer/packs/README.md`
   for the file format if you'd rather hand-edit or generate one
   yourself.
+
+  Current limitation: a pack's `idle`/`work` spots default to fixed
+  fractions of the image (roughly the bottom-left/right quarters) and
+  the walk is always a straight line between them, so art with the
+  desk on the left or furniture in the way won't look right yet. See
+  "Roadmap" below for the fix in progress.
 - **Walk speed**: `plugin/scripts/state_lib.py`, the `WALK_DURATION`
   constant (seconds for a full idle <-> work walk). This is the only
   place to change it, `pet.py` just reads whatever duration the state
@@ -126,6 +132,42 @@ PET_CHARACTER=orb ./start.sh                        # try the other character
   PNG using PIL, if you have it installed, useful for iterating on the
   art without waiting on a live session. Not needed to run the actual
   pet, that's PNG-export only.
+
+## Roadmap: standardizing custom art
+
+The pack format above works, but it assumes every scene is laid out
+enough like `couch_desk` that a fixed corner of the image is a
+reasonable guess for "idle" and "work". That's not a real standard —
+it breaks for a scene with the desk on the left, or furniture between
+the two spots. The plan to fix it, decided but not yet built:
+
+- **Spots are declared, never guessed from a fixed layout.** Either in
+  `pack.json`, or by painting a pure-magenta pixel for `idle` and a
+  pure-cyan pixel for `work` directly in the source image — the
+  importer detects and removes them before resizing. A pack without
+  either gets today's corner-fraction default plus a warning, not a
+  silent guess.
+- **An optional `path` of waypoints** (also in `pack.json`) lets the
+  walk follow a polyline from `idle` to `work` instead of a straight
+  line, for scenes where a straight line would cut through a wall.
+- **Facing direction comes from the path**, not a hardcoded "right
+  means heading to work" — the assumption `characters/bot.py` makes
+  today, which is wrong for a scene where work is on the left.
+- **Pets get a fixed 16x16 frame** authored facing right (mirrored for
+  left), transparent background, feet at bottom-center — the one
+  thing that has to be consistent for a pet to work in any scene. A
+  sprite sheet can add `idle`/`walk`/`work` animation rows; a single
+  static image stays valid and keeps today's procedural bob as a
+  fallback.
+- **`renderer/config.json`** picks the active scene/character (checked
+  for changes every frame, no restart needed), with the
+  `PET_SCENE`/`PET_CHARACTER` env vars still available for quick
+  overrides.
+- **Nearest-neighbor resampling** replaces `import_image.py`'s current
+  `LANCZOS`, which blurs pixel art on resize.
+
+See `CHANGELOG.md` for the full write-up of these decisions and the
+project's history in general.
 
 ## Uninstall
 
