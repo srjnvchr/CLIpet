@@ -3,8 +3,7 @@
 An animated pixel-art companion that lives in a pinned tmux pane above
 your Claude Code session. It sits on the couch reading (or gaming)
 while idle, and walks over to the desk to work whenever you give
-Claude something to do. If a new task lands while it's mid-walk, it
-turns around from exactly where it is instead of teleporting.
+Claude something to do. It's designed for broad terminal compatibility and modular scenes and pets.
 
 ## Architecture (why it's two folders, not one plugin)
 
