@@ -4,6 +4,7 @@ An animated pixel-art companion that lives in a pinned tmux pane above
 your Claude Code session. It sits on the couch reading (or gaming)
 while idle, and walks over to the desk to work whenever you give
 Claude something to do. It's designed for broad terminal compatibility and modular scenes and pets.
+
 <img width="800" alt="CLIpet" src="https://github.com/user-attachments/assets/b528aa02-c1ff-4267-9377-142e5c8ed4a9" />
 
 Just for fun, I put him on my CPU cooler LCD screen to keep an eye on it when I am doing other things
